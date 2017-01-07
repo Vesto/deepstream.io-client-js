@@ -1,3 +1,5 @@
+var quark = require( 'quark-core' );
+
 /**
  * A regular expression that matches whitespace on either side, but
  * not in the center of a string
@@ -14,16 +16,6 @@ var TRIM_REGULAR_EXPRESSION = /^[\s\uFEFF\xA0]+|[\s\uFEFF\xA0]+$/g;
 var OBJECT = 'object';
 
 /**
- * True if environment is node, false if it's a browser
- * This seems somewhat inelegant, if anyone knows a better solution,
- * let's change this (must identify browserify's pseudo node implementation though)
- *
- * @public
- * @type {Boolean}
- */
-exports.isNode = typeof process !== 'undefined' && process.toString() === '[object process]';
-
-/**
  * Provides as soon as possible async execution in a cross
  * platform way
  *
@@ -33,11 +25,7 @@ exports.isNode = typeof process !== 'undefined' && process.toString() === '[obje
  * @returns {void}
  */
 exports.nextTick = function( fn ) {
-	if( exports.isNode ) {
-		process.nextTick( fn );
-	} else {
-		setTimeout( fn, 0 );
-	}
+	new quark.Timer(0, fn, true);
 };
 
 /**
@@ -77,7 +65,7 @@ exports.trim = function( inputString ) {
  * @public
  * @returns {Boolean} isEqual
  */
-exports.deepEquals= function( objA, objB ) {
+exports.deepEquals = function( objA, objB ) {
 	if ( objA === objB ) {
 		return true
 	}
@@ -151,11 +139,7 @@ exports.shallowCopy = function ( obj ) {
  * @returns {Number} timeoutId
  */
 exports.setTimeout = function( callback, timeoutDuration ) {
-	if( timeoutDuration !== null ) {
-		return setTimeout( callback, timeoutDuration );
-	} else {
-		return -1;
-	}
+	new quark.Timer(timeoutDuration / 1000, callback, true);
 };
 
 /**
@@ -169,11 +153,8 @@ exports.setTimeout = function( callback, timeoutDuration ) {
  * @returns {Number} intervalId
  */
 exports.setInterval = function( callback, intervalDuration ) {
-	if( intervalDuration !== null ) {
-		return setInterval( callback, intervalDuration );
-	} else {
-		return -1;
-	}
+    var timer = new quark.Timer(intervalDuration / 1000, callback, true);
+	timer.repeats = true;
 };
 
 /**

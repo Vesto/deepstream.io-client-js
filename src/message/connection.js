@@ -1,5 +1,4 @@
-var BrowserWebSocket = global.WebSocket || global.MozWebSocket,
-	NodeWebSocket =  require( 'ws' ),
+var quark = require( 'quark-core' ),
 	messageParser = require( './message-parser' ),
 	messageBuilder = require( './message-builder' ),
 	utils = require( '../utils/utils' ),
@@ -148,15 +147,12 @@ Connection.prototype.close = function() {
  * @returns {void}
  */
 Connection.prototype._createEndpoint = function() {
-	this._endpoint = BrowserWebSocket
-		? new BrowserWebSocket( this._url )
-		: new NodeWebSocket( this._url , this._options.nodeSocketOptions )
-	;
+	this._endpoint = new quark.WebSocket(this._url);
 
-	this._endpoint.onopen = this._onOpen.bind( this );
-	this._endpoint.onerror = this._onError.bind( this );
-	this._endpoint.onclose = this._onClose.bind( this );
-	this._endpoint.onmessage = this._onMessage.bind( this );
+	this._endpoint.onOpen = this._onOpen.bind( this );
+	this._endpoint.onError = this._onError.bind( this );
+	this._endpoint.onClose = this._onClose.bind( this );
+	this._endpoint.onMessage = this._onMessage.bind( this );
 };
 
 /**
@@ -186,7 +182,7 @@ Connection.prototype._resetCurrentMessageCount = function() {
  * @returns {void}
  */
 Connection.prototype._sendQueuedMessages = function() {
-	if( this._state !== C.CONNECTION_STATE.OPEN || this._endpoint.readyState !== this._endpoint.OPEN ) {
+	if( this._state !== C.CONNECTION_STATE.OPEN || this._endpoint.state !== quark.WebSocket.State.Open) {
 		return;
 	}
 
@@ -216,7 +212,7 @@ Connection.prototype._sendQueuedMessages = function() {
  * @returns {void}
  */
 Connection.prototype._submit = function( message ) {
-	if( this._endpoint.readyState === this._endpoint.OPEN ) {
+	if( this._endpoint.state === quark.WebSocket.State.Open ) {
 		this._endpoint.send( message );
 	} else {
 		this._onError( 'Tried to send message on a closed websocket connection' );
@@ -287,12 +283,13 @@ Connection.prototype._onOpen = function() {
  * The connection is considered broken once this method has been
  * invoked.
  *
+ * @param   {WebSocket} socket that had an error
  * @param   {String|Error} error connection error
  *
  * @private
  * @returns {void}
  */
-Connection.prototype._onError = function( error ) {
+Connection.prototype._onError = function( socket, error ) {
 	clearInterval( this._heartbeatInterval );
 	this._setState( C.CONNECTION_STATE.ERROR );
 
@@ -340,13 +337,14 @@ Connection.prototype._onClose = function() {
 /**
  * Callback for messages received on the connection.
  *
+ * @param   {WebSocket} socket that had an error
  * @param   {String} message deepstream message
  *
  * @private
  * @returns {void}
  */
-Connection.prototype._onMessage = function( message ) {
-	var parsedMessages = messageParser.parse( message.data, this._client ),
+Connection.prototype._onMessage = function( socket, message ) {
+	var parsedMessages = messageParser.parse( message, this._client ),
 		i;
 
 	for( i = 0; i < parsedMessages.length; i++ ) {

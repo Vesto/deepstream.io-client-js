@@ -4,7 +4,7 @@ deepstream.io-client-js [![Build Status](https://travis-ci.org/deepstreamIO/deep
 
 =======================
 
-The Browser / Node Client for [deepstream.io](http://deepstream.io/)
+A modified version of the JavaScript client for [deepstream.io](http://deepstream.io/) made to work with `quark-core`.
 
 ## Documentation
 
